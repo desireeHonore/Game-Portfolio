@@ -173,48 +173,51 @@
         }
     </style>
 </head>
+
+    
 <body>
     <audio id="whack" src="media/whack.mp3"></audio>
     
-    <h1>Whack-A-Mole</h1>
+    <h1>WHACK-A-MOLE</h1>
     
-    <div class="game-container">
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-label">Time</div>
-                <div class="stat-value" id="timeLeft">30</div>
-            </div>
-            <div class="stat">
-                <div class="stat-label">Score</div>
-                <div class="stat-value" id="score">0</div>
-            </div>
-        </div>
-        
-        <div class="board">
-            <div class="hole"><img></div>
-            <div class="hole"><img></div>
-            <div class="hole"><img></div>
-            <div class="hole"><img></div>
-            <div class="hole"><img></div>
-            <div class="hole"><img></div>
-            <div class="hole"><img></div>
-            <div class="hole"><img></div>
-            <div class="hole"><img></div>
-            <div class="hole"><img></div>
-            <div class="hole"><img></div>
-            <div class="hole"><img></div>
-        </div>
-        
-        <button id="start" onclick="start()">Start Game</button>
-    </div>
+    <table align="center" class="board">
+        <tr>
+            <th colspan="4">WHACK-A-MOLE</th>
+        </tr>
+        <tr class="stat-row">
+            <th colspan="2">Time: <span id="timeLeft">30</span></th>
+            <th colspan="2">Score: <span id="score">0</span></th>
+        </tr>
+        <tr>
+            <td><img></td>
+            <td><img></td>
+            <td><img></td>
+            <td><img></td>
+        </tr>
+        <tr>
+            <td><img></td>
+            <td><img></td>
+            <td><img></td>
+            <td><img></td>
+        </tr>
+        <tr>
+            <td><img></td>
+            <td><img></td>
+            <td><img></td>
+            <td><img></td>
+        </tr>
+    </table>
+    
+    <button id="start" onclick="start()">START GAME</button>
     
     <script>
         var timeLeft = 30;
         var score = 0;
         var intervalTimerId = 0;
         var gameOn = false;
-        var holes = document.querySelectorAll(".hole img");
+        var holes = document.getElementsByTagName("img");
 
+        // Use actual image files
         const moleDownImg = "media/mole_down.png";
         const moleUpImg = "media/mole_up.png";
         const moleHitImg = "media/mole_hit.png";
@@ -222,7 +225,9 @@
         for (var i = 0; i < holes.length; i++) {
             holes[i].src = moleDownImg;
             
-            holes[i].addEventListener('mousedown', function(e) {
+            holes[i].onmousedown = function(e) {
+                this.style.cursor = 'url("media/mallet_down.png"), default';
+                
                 var whackSound = document.getElementById("whack");
                 whackSound.pause();
                 whackSound.currentTime = 0;
@@ -230,12 +235,38 @@
                 
                 if (this.src.endsWith("media/mole_up.png")) {
                     score++;
-                    document.getElementById("score").textContent = score;
+                    document.getElementById("score").innerHTML = score;
                     this.src = moleHitImg;
                     
+                    createParticles(e.clientX, e.clientY);
                     showScorePopup(e.clientX, e.clientY);
                 }
-            });
+                forceRerender();
+            };
+            
+            holes[i].onmouseup = function(e) {
+                this.style.cursor = 'url("media/mallet_up.png"), default';
+                forceRerender();
+            };
+        }
+
+        function createParticles(x, y) {
+            const colors = ['#FF0000', '#FFFF00', '#00FF00', '#0000FF', '#FF00FF', '#FFA500'];
+            for (let i = 0; i < 12; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                const angle = (Math.PI * 2 * i) / 12;
+                const distance = 50 + Math.random() * 30;
+                particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+                particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+                
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 800);
+            }
         }
 
         function showScorePopup(x, y) {
@@ -245,7 +276,16 @@
             popup.style.left = x + 'px';
             popup.style.top = y + 'px';
             document.body.appendChild(popup);
-            setTimeout(() => popup.remove(), 600);
+            setTimeout(() => popup.remove(), 1000);
+        }
+
+        function forceRerender() {
+            var s = document.createElement("span");    
+            s.id = "animationTrigger"; 
+            document.body.append(s);
+            window.requestAnimationFrame(function() {
+                document.getElementById("animationTrigger").remove();
+            });
         }
 
         function getRandomNumber(min, max) {
@@ -260,6 +300,10 @@
             img.src = moleUpImg;
         }
 
+        function moleHit(img) {
+            img.src = moleHitImg;
+        }
+
         function showRandomMole() {
             if (!gameOn) {
                 return;
@@ -268,9 +312,7 @@
             var upTime = getRandomNumber(500, 1500);
             moleUp(holes[moleIndex]);
             setTimeout(function() {
-                if (holes[moleIndex].src.endsWith("media/mole_up.png")) {
-                    moleDown(holes[moleIndex]);
-                }
+                moleDown(holes[moleIndex]);  
             }, upTime);
             var waitTime = getRandomNumber(400, 1000);
             setTimeout(showRandomMole, waitTime);
@@ -278,29 +320,23 @@
 
         function countdown() {
             timeLeft--;
-            document.getElementById("timeLeft").textContent = timeLeft;
-            
+            document.getElementById("timeLeft").innerHTML = timeLeft;
             if (timeLeft == 0) {
                 clearInterval(intervalTimerId);
                 document.getElementById("start").disabled = false;
-                document.getElementById("start").textContent = "Play Again";
+                document.getElementById("start").innerHTML = "PLAY AGAIN";
                 gameOn = false;
             }
         }
 
         function start() {
             timeLeft = 30;
-            document.getElementById("timeLeft").textContent = timeLeft;
+            document.getElementById("timeLeft").innerHTML = timeLeft;
             score = 0;
-            document.getElementById("score").textContent = score;
+            document.getElementById("score").innerHTML = score;
             gameOn = true;
             document.getElementById("start").disabled = true;
-            document.getElementById("start").textContent = "Game Active";
-            
-            for (let i = 0; i < holes.length; i++) {
-                holes[i].src = moleDownImg;
-            }
-            
+            document.getElementById("start").innerHTML = "GAME ACTIVE";
             intervalTimerId = setInterval(countdown, 1000);
             showRandomMole();
         }
